@@ -12,6 +12,8 @@ RUN adduser --quiet jenkins &&\
 	
 RUN curl -fsSL https://get.docker.com/ | sh
 
+RUN apt-get install software-properties-common
+
 # Install Java.
 RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
 	add-apt-repository -y ppa:webupd8team/java && \
