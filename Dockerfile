@@ -12,7 +12,7 @@ RUN adduser --quiet jenkins &&\
 	
 RUN curl -fsSL https://get.docker.com/ | sh
 
-RUN apt-get install software-properties-common
+RUN apt-get install -y software-properties-common
 
 # Install Java.
 RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
@@ -25,5 +25,8 @@ RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true 
 # Define commonly used JAVA_HOME variable
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 
+EXPOSE 22
+
+CMD ["/usr/sbin/sshd", "-D"]
 
 	
