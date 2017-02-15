@@ -1,15 +1,16 @@
 FROM ubuntu:14.04
 MAINTAINER Guiomar Tuñon <gtunon@naevatec.com>
 
+# Set up ssh server
+EXPOSE 22
 RUN apt-get update &&\
-	apt-get install -y openssh-server curl &&\
-	apt-get clean -y && rm -rf /var/lib/apt/lists/* &&\ 
-	sed -i 's|session    required     pam_loginuid.so|session    optional     pam_loginuid.so|g' /etc/pam.d/sshd &&\
-	mkdir -p /var/run/sshd
-	
-RUN adduser --quiet jenkins &&\
-    echo "jenkins:jenkins" | chpasswd
-	
+	apt-get install -y openssh-server curl \
+	# Required to not get a 'Missing privilege separation directory' error
+        && mkdir /var/run/sshd \
+	&& ssh-keygen -A \
+	&& sed -i 's|session    required     pam_loginuid.so|session    optional     pam_loginuid.so|g' /etc/pam.d/sshd \
+	 && echo "DONE *****************************************************"
+
 RUN curl -fsSL https://get.docker.com/ | sh
 
 RUN apt-get install -y software-properties-common
@@ -25,24 +26,27 @@ RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true 
 # Define commonly used JAVA_HOME variable
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 
-# Install maven 
-ARG MAVEN_VERSION=3.3.9
-ARG USER_HOME_DIR="/root"
-ARG SHA1=5b4c117854921b527ab6190615f9435da730ba05
+# Set up some environment for SSH clients (ENV statements have no affect on ssh clients)
+RUN echo "export DOCKER_HOST='unix:///var/run/docker.sock'" >> /root/.bashrc \
+ && echo "export DEBIAN_FRONTEND=noninteractive" >> /root/.bashrc
 
-RUN mkdir -p /usr/share/maven /usr/share/maven/ref \
-  && curl -fsSL -o /tmp/apache-maven.tar.gz https://apache.osuosl.org/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz \
-  && echo "${SHA1}  /tmp/apache-maven.tar.gz" | sha1sum -c - \
-  && tar -xzf /tmp/apache-maven.tar.gz -C /usr/share/maven --strip-components=1 \
-  && rm -f /tmp/apache-maven.tar.gz \
-  && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+RUN cp -a /etc/ssh/ /etc/ssh.original/ \
+ && cp -a /etc/pam.d/ /etc/pam.d.original/
 
-ENV MAVEN_HOME /usr/share/maven
-ENV MAVEN_CONFIG "$USER_HOME_DIR/.m2"
 
-VOLUME "$USER_HOME_DIR/.m2"
 
-EXPOSE 22
+# use a volume for the SSH host keys, to allow a persistent host ID across container restarts
+VOLUME ["/etc/ssh/ssh_host_keys"]
+ 
+# Set user jenkins to the image
+RUN adduser --quiet jenkins &&\
+    echo "jenkins:jenkins" | chpasswd
+
+USER jenkins
+
+RUN cd ~/ &&\
+        echo "$USER" && \
+        pwd
 
 CMD ["/usr/sbin/sshd", "-D"]
 
