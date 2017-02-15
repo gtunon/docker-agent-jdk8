@@ -7,5 +7,6 @@ Docker image for jenkins cloud
 This image has been developed in order to provide the docker cloud for jenkins a container with the minimun necessary:
 
 * docker (last version)
-* oracle jdk 8 
+* oracle java jdk 8 
+* maven 3.3.9
 
